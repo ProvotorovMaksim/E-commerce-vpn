@@ -35,7 +35,7 @@ class ProfileResponse(BaseModel):
 class DevicesResponse(BaseModel):
     devices_list: list
 
-class DevicesCreateRequest(BaseModel):
+class DeviceCreateRequest(BaseModel):
     name: str
     country_code: str
 
@@ -43,4 +43,3 @@ class DeviceCreateResponse(BaseModel):
     id: int
     name: str
     config_text: str
-    qr_code_url: str
