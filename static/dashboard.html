@@ -35,12 +35,20 @@
 <div class="container">
     <!-- Форма входа -->
     <div id="login-section" class="card">
-        <h2>Вход в систему</h2>
+        <h2 id="form-title">Вход в систему</h2>
+        <input type="text" id="name" placeholder="Имя" class="hidden" required>
         <input type="email" id="email" placeholder="Email" required>
         <input type="password" id="password" placeholder="Пароль" required>
-        <button onclick="login()">Войти</button>
+        <button onclick="submitAuth()" id="submit-btn">Войти</button>
+        <p style="text-align: center; margin-top: 1rem; color: #94a3b8;">
+            <span id="toggle-text">Нет аккаунта?</span>
+            <a href="#" onclick="toggleForm()" style="color: var(--accent);">
+                <span id="toggle-link">Зарегистрироваться</span>
+            </a>
+        </p>
         <p id="login-error" style="color: var(--danger); margin-top: 0.5rem;"></p>
     </div>
+
 
     <!-- Панель управления -->
     <div id="dashboard-section" class="hidden">
@@ -224,6 +232,39 @@
             alert(e.message);
         }
     }
+    let isRegisterMode = false;
+
+    function toggleForm() {
+        isRegisterMode = !isRegisterMode;
+        document.getElementById('form-title').innerText = isRegisterMode ? 'Регистрация' : 'Вход в систему';
+        document.getElementById('name').classList.toggle('hidden');
+        document.getElementById('submit-btn').innerText = isRegisterMode ? 'Зарегистрироваться' : 'Войти';
+        document.getElementById('toggle-text').innerText = isRegisterMode ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
+        document.getElementById('toggle-link').innerText = isRegisterMode ? 'Войти' : 'Зарегистрироваться';
+    }
+
+    async function submitAuth() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+            let data;
+            if (isRegisterMode) {
+                const name = document.getElementById('name').value;
+                if (!name) return alert('Введите имя');
+                data = await apiCall('/register', 'POST', { email, password, name });
+            } else {
+                data = await apiCall('/login', 'POST', { email, password });
+            }
+            
+            token = data.access_token;
+            localStorage.setItem('vpn_token', token);
+            showDashboard();
+        } catch (e) {
+            document.getElementById('login-error').innerText = e.message;
+        }
+    }
+
 </script>
 </body>
 </html>

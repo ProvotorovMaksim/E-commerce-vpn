@@ -1,0 +1,44 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+      GIGACHAT_CREDENTIALS: ${GIGACHAT_CREDENTIALS}
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_DRIVER: ${DATABASE_DRIVER}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      #QDRANT_URL: ${QDRANT_URL}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      BILLING_SERVICE_URL: ${BILLING_SERVICE_URL}
+    depends_on:
+      - db
+    networks:
+      - saas_network
+    restart: unless-stopped
+
+  db:
+    image: postgres:13
+    container_name: vpn_db
+    ports:
+      - "5455:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data 
+    networks:
+      - saas_network
+    restart: unless-stopped
+
+volumes:
+  db-data:
+
+networks:
+  saas_network:
+    driver: bridge
+    external: true

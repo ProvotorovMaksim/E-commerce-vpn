@@ -1,9 +1,15 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Optional
 
-class AuthRequest(BaseModel):
+class LoginRequest(BaseModel):
     email: str
-    password: str 
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
     
 class AuthResponse(BaseModel):
     access_token: str
@@ -21,7 +27,7 @@ class TariffResponse(BaseModel):
 
 class PaymentRequest(BaseModel):
     tariff_id: int
-    promo_code: str
+    promo_code: Optional[str]
 
 class PaymentResponse(BaseModel):
     payment_id: str

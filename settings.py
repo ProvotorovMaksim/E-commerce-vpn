@@ -10,11 +10,12 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = getenv("POSTGRES_USER", "")
     POSTGRES_PASSWORD: str = getenv("POSTGRES_PASSWORD", "")
     POSTGRES_DB: str = getenv("POSTGRES_DB", "")
-    QDRANT_URL: str = getenv("QDRANT_URL", "")
-    #QDRANT_API_KEY: str = getenv("QDRANT_API_KEY", "")
     NO_CREDENTIALS_PATHS: dict = json.loads(getenv("NO_CREDENTIALS_PATHS", "{}"))
     JWT_SECRET_KEY: str = getenv("JWT_SECRET_KEY", "")
     ALGORITHM: str = getenv("ALGORITHM", "")
+    VPN_SERVICE_URL: str = getenv("VPN_SERVICE_URL", "")
+    AUTH_SERVICE_URL: str = getenv("AUTH_SERVICE_URL", "")
+    BILLING_SERVICE_URL: str = getenv("BILLING_SERVICE_URL", "")
 
     class Config:
         env_file = ".env"
