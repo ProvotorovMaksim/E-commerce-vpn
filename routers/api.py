@@ -1,4 +1,5 @@
 import httpx
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -179,30 +180,36 @@ async def create_device(
     user_id: int = Depends(verify_token_optional), 
     db: AsyncSession = Depends(get_db)
 ):
-    client = await db.get(Client, user_id)
+    # 1. Явно загружаем клиента с его устройствами, чтобы избежать MissingGreenlet при .append()
+    query = select(Client).options(selectinload(Client.devices)).where(Client.client_id == user_id)
+    result = await db.execute(query)
+    client = result.scalar_one_or_none()
+    
     if client is None:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    # 1. Генерируем уникальное имя пользователя для Marzban (например, user_1_device_5)
-    marzban_username = f"user_{user_id}_dev_{req.name.replace(' ', '_')}"
+    # 2. Очищаем имя для Marzban: только латиница, цифры, _ и -, всё в нижнем регистре
+    safe_name = re.sub(r'[^a-z0-9_-]', '_', req.name.lower().strip())
+    marzban_username = f"user_{user_id}_dev_{safe_name}"
 
     try:
-        # 2. Создаем пользователя в Marzban через наш новый сервис
+        # 3. Создаем пользователя в Marzban через наш сервис
         vpn_response = await vpn_client.create_user(username=marzban_username)
-        config_text = vpn_response["subscription_url"] # Используем ссылку на подписку Marzban как конфиг
+        config_text = vpn_response["subscription_url"]
         
     except httpx.HTTPStatusError as e:
         logger.error(f"Ошибка при создании пользователя в VPN сервисе: {e.response.text}")
         raise HTTPException(status_code=500, detail="Не удалось выделить ресурсы VPN")
 
-    # 3. Создаем запись в БД шлюза
+    # 4. Создаем запись в БД шлюза
     new_device = Device(
         name=req.name,
         country_code=req.country_code,
-        config_text=config_text, # Здесь теперь лежит реальная ссылка на подписку
+        config_text=config_text,
         status="active"
     )
     
+    # Теперь append безопасен, так как коллекция devices уже загружена через selectinload
     client.devices.append(new_device)
     await db.commit()
     await db.refresh(new_device)
@@ -240,7 +247,9 @@ async def delete_device(
     # Для простоты, если config_text - это URL, мы можем просто передать device.name, но лучше хранить marzban_username в модели Device.
     # Если marzban_username не хранится отдельно, можно пропустить этот шаг или распарсить URL.
     # Допустим, мы храним его, или передаем имя устройства как часть имени:
-    marzban_username = f"user_{user_id}_dev_{device.name.replace(' ', '_')}"
+    safe_name = re.sub(r'[^a-z0-9_-]', '_', device.name.lower().strip())
+    marzban_username = f"user_{user_id}_dev_{safe_name}"
+
     
     try:
         await vpn_client.delete_user(username=marzban_username)
